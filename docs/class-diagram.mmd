@@ -1,0 +1,102 @@
+classDiagram
+    class ContentItem {
+        <<abstract>>
+        +id: string
+        +title: string
+        +author: string
+        +price: string
+        +preview()* string
+    }
+
+    class Article {
+        <<abstract>>
+        +category: ArticleCategory
+        +body: string
+    }
+
+    class WorldNewsArticle {
+        +region: string
+        +preview() string
+    }
+
+    class BusinessArticle {
+        +relatedCompany: string
+        +preview() string
+    }
+
+    class LifestyleArticle {
+        +subtype: LifestyleSubtype
+        +highlights: string[]
+        +preview() string
+    }
+
+    class PaymentProvider {
+        <<interface>>
+        +getPaymentRequirements(articleId: string) Promise~PaymentRequirements~
+        +verifyPayment(paymentHeader: string) Promise~VerificationResult~
+        +settlePayment(paymentHeader: string) Promise~SettlementResult~
+    }
+
+    class ContentRepository {
+        <<interface>>
+        +getById(id: string) Promise~ContentItem~
+        +getAll(filters: ContentFilters) Promise~ContentItem[]~
+        +save(item: ContentItem) Promise~void~
+    }
+
+    class PaymentVerifier {
+        -facilitatorUrl: string
+        -payToAddress: string
+        +getPaymentRequirements(articleId: string) Promise~PaymentRequirements~
+        +verifyPayment(paymentHeader: string) Promise~VerificationResult~
+        +settlePayment(paymentHeader: string) Promise~SettlementResult~
+    }
+
+    class ArticleRepository {
+        -items: Map
+        +getById(id: string) Promise~ContentItem~
+        +getAll(filters: ContentFilters) Promise~ContentItem[]~
+        +save(item: ContentItem) Promise~void~
+    }
+
+    class TransactionLogger {
+        -transactions: Transaction[]
+        +record(transaction: Transaction) void
+        +getAll() Transaction[]
+    }
+
+    class SalesReportGenerator {
+        -logger: TransactionLogger
+        -articles: ContentRepository
+        +generate() Promise~SalesReport~
+    }
+
+    class Transaction {
+        +articleId: string
+        +author: string
+        +buyerWalletAddress: string
+        +amount: string
+        +timestamp: string
+        +settlementStatus: string
+        +transactionHash: string
+    }
+
+    class SalesReport {
+        +generatedAt: string
+        +byArticle: SalesSummary[]
+        +byCategory: SalesSummary[]
+        +byAuthor: SalesSummary[]
+    }
+
+    ContentItem <|-- Article
+    Article <|-- WorldNewsArticle
+    Article <|-- BusinessArticle
+    Article <|-- LifestyleArticle
+
+    PaymentProvider <|.. PaymentVerifier
+    ContentRepository <|.. ArticleRepository
+
+    SalesReportGenerator --> TransactionLogger
+    SalesReportGenerator --> ContentRepository
+    SalesReportGenerator ..> SalesReport
+    TransactionLogger --> Transaction
