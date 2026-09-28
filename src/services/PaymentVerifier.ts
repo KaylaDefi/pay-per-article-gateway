@@ -47,9 +47,7 @@ export class PaymentVerifier implements PaymentProvider {
     return {
       scheme: "exact",
       network: this.config.network,
-      maxAmountRequired: String(
-        Math.round(parseFloat(article.price) * USDC_UNITS)
-      ),
+      amount: String(Math.round(parseFloat(article.price) * USDC_UNITS)),
       asset: this.config.usdcAddress,
       payTo: this.config.payToAddress,
       resource: resourceUrl,

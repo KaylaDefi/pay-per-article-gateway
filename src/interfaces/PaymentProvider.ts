@@ -3,7 +3,7 @@ import { ContentItem } from "../models/ContentItem";
 export interface PaymentRequirements {
   scheme: "exact";
   network: string;
-  maxAmountRequired: string;
+  amount: string;
   asset: string;
   payTo: string;
   resource: string;
