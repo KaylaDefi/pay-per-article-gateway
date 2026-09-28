@@ -16,6 +16,6 @@ export class LifestyleArticle extends Article {
   }
 
   preview(): string {
-    return `${this.title} (${this.subtype}): ${this.highlights.join(", ")}`;
+    return `$ (${this.subtype}): ${this.highlights.join(", ")}`;
   }
 }

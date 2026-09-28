@@ -1,12 +1,6 @@
 import { useState } from "react";
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
-import { fetchArticles, type ArticleFilters } from "../api/articles";
-
-const CATEGORY_LABELS: Record<string, string> = {
-  "world-news": "World News",
-  business: "Business",
-  lifestyle: "Lifestyle",
-};
+import { fetchArticles, CATEGORY_LABELS, type ArticleFilters } from "../api/articles";
 
 interface ArticleLibraryProps {
   onSelect: (id: string) => void;
@@ -26,55 +20,66 @@ export function ArticleLibrary({ onSelect }: ArticleLibraryProps) {
   }
 
   return (
-    <section className="library">
+    <section>
       <div className="filters">
-        <select
-          value={filters.category ?? ""}
-          onChange={(e) => updateFilter("category", e.target.value)}
-        >
-          <option value="">All categories</option>
+        <div className="tabs" role="group" aria-label="Category">
+          <button
+            className="tab"
+            aria-pressed={!filters.category}
+            onClick={() => updateFilter("category", "")}
+          >
+            All
+          </button>
           {Object.entries(CATEGORY_LABELS).map(([value, label]) => (
-            <option key={value} value={value}>
+            <button
+              key={value}
+              className={`tab tab--${value}`}
+              aria-pressed={filters.category === value}
+              onClick={() => updateFilter("category", value)}
+            >
               {label}
-            </option>
+            </button>
           ))}
-        </select>
+        </div>
         <input
           type="search"
-          placeholder="Search titles"
+          aria-label="Search articles"
+          placeholder="Search by title, author, or topic"
           value={filters.keyword ?? ""}
           onChange={(e) => updateFilter("keyword", e.target.value)}
         />
-        <input
-          type="search"
-          placeholder="Author"
-          value={filters.author ?? ""}
-          onChange={(e) => updateFilter("author", e.target.value)}
-        />
       </div>
 
-      {isLoading && <p>Loading articles...</p>}
+      {isLoading && <p className="hint">Loading articles...</p>}
       {error && <p className="error">{error.message}</p>}
-      {articles && articles.length === 0 && <p>No articles match these filters.</p>}
+      {articles?.length === 0 && (
+        <p className="hint">No articles match. Try another category or clear the search.</p>
+      )}
 
-      <div className="article-grid">
+      <ul className="article-list">
         {articles?.map((article) => (
-          <button
-            key={article.id}
-            className="article-card"
-            onClick={() => onSelect(article.id)}
-          >
-            <span className="category">
-              {article.category ? CATEGORY_LABELS[article.category] : "Article"}
+          <li key={article.id} className="article-row">
+            <div className="row-text">
+              {article.category && (
+                <span className={`category category--${article.category}`}>
+                  {CATEGORY_LABELS[article.category]}
+                </span>
+              )}
+              <h2>
+                <button className="row-link" onClick={() => onSelect(article.id)}>
+                  {article.title}
+                </button>
+              </h2>
+              <p className="byline">By {article.author}</p>
+              <p className="row-preview">{article.preview}</p>
+            </div>
+            <span className="stub">
+              <span className="stub-price">${article.price}</span>
+              <span className="stub-unit">USDC</span>
             </span>
-            <h2>{article.title}</h2>
-            <p className="byline">
-              {article.author} · ${article.price} USDC
-            </p>
-            <p className="preview">{article.preview}</p>
-          </button>
+          </li>
         ))}
-      </div>
+      </ul>
     </section>
   );
 }

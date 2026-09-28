@@ -1,40 +1,64 @@
 import { useChains } from "wagmi";
-import type { FullArticle } from "../api/articles";
+import { CATEGORY_LABELS, type FullArticle } from "../api/articles";
 
 interface ArticleReaderProps {
   article: FullArticle;
   onBack: () => void;
 }
 
+function shortenHash(hash: string): string {
+  return `${hash.slice(0, 10)}...${hash.slice(-6)}`;
+}
+
 export function ArticleReader({ article, onBack }: ArticleReaderProps) {
   const [targetChain] = useChains();
-  const explorerUrl = targetChain.blockExplorers?.default.url;
+  const explorer = targetChain.blockExplorers?.default;
+  const paragraphs = article.body?.split(/\n{2,}/) ?? [];
 
   return (
-    <article className="reader">
+    <article className="story">
       <button className="back" onClick={onBack}>
-        ← Back to library
+        Back to library
       </button>
+      {article.category && (
+        <span className={`category category--${article.category}`}>
+          {CATEGORY_LABELS[article.category]}
+        </span>
+      )}
       <h1>{article.title}</h1>
-      <p className="byline">{article.author}</p>
-      <div className="body">{article.body}</div>
+      <p className="byline">By {article.author}</p>
 
       {article.transactionHash && (
-        <p className="receipt">
-          Paid ${article.price} USDC.{" "}
-          {explorerUrl ? (
-            <a
-              href={`${explorerUrl}/tx/${article.transactionHash}`}
-              target="_blank"
-              rel="noreferrer"
-            >
-              View transaction
-            </a>
-          ) : (
-            <code>{article.transactionHash}</code>
-          )}
-        </p>
+        <aside className="receipt" aria-label="Receipt">
+          <dl>
+            <dt>Paid</dt>
+            <dd>${article.price} USDC</dd>
+            <dt>Network</dt>
+            <dd>{targetChain.name}</dd>
+            <dt>Transaction</dt>
+            <dd>
+              {explorer ? (
+                <a
+                  className="hash"
+                  href={`${explorer.url}/tx/${article.transactionHash}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {shortenHash(article.transactionHash)}
+                </a>
+              ) : (
+                <code className="hash">{article.transactionHash}</code>
+              )}
+            </dd>
+          </dl>
+        </aside>
       )}
+
+      <div className="article-body">
+        {paragraphs.map((paragraph, i) => (
+          <p key={i}>{paragraph}</p>
+        ))}
+      </div>
     </article>
   );
 }

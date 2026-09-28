@@ -17,7 +17,10 @@ export default function App() {
   return (
     <div className="app">
       <header className="app-header">
-        <h1>Pay-Per-Article News</h1>
+        <div>
+          <p className="masthead">The Penny Press</p>
+          <p className="tagline">Pay for the stories you want in USDC on the Base Network. No subscriptions.</p>
+        </div>
         <WalletConnector />
       </header>
       <main>

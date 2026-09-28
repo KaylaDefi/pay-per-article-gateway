@@ -14,6 +14,6 @@ export class BusinessArticle extends Article {
 
   preview(): string {
     const tag = this.relatedCompany ? `[${this.relatedCompany}] ` : "";
-    return `${tag}${this.title}: ${this.body.slice(0, 120)}...`;
+    return `${tag}: ${this.body.slice(0, 120)}...`;
   }
 }

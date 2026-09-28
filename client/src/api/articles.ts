@@ -1,5 +1,11 @@
 export type ArticleCategory = "world-news" | "business" | "lifestyle";
 
+export const CATEGORY_LABELS: Record<string, string> = {
+  "world-news": "World News",
+  business: "Business",
+  lifestyle: "Lifestyle",
+};
+
 export interface ArticleSummary {
   id: string;
   title: string;

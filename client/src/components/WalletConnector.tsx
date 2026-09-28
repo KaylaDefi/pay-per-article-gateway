@@ -23,7 +23,7 @@ export function WalletConnector() {
 
     return (
       <div className="wallet">
-        <span>
+        <span className="address">
           {connector?.name}: {shortenAddress(address)}
         </span>
         {wrongNetwork && (

@@ -23,10 +23,12 @@ export class ArticleRepository implements ContentRepository {
     }
 
     if (filters?.keyword) {
-      const keyword = filters.keyword.toLowerCase();
-      results = results.filter((item) =>
-        item.title.toLowerCase().includes(keyword)
-      );
+      const terms = filters.keyword.toLowerCase().split(/\s+/).filter(Boolean);
+      results = results.filter((item) => {
+        const category = item instanceof Article ? item.category.replace("-", " ") : "";
+        const searchable = `${item.title} ${item.author} ${category} ${item.preview()}`.toLowerCase();
+        return terms.every((term) => searchable.includes(term));
+      });
     }
 
     return results;

@@ -12,7 +12,7 @@ export class WorldNewsArticle extends Article {
     super(id, title, author, price, "world-news", body);
   }
 
-  preview(): string {
-    return `[${this.region}] ${this.title}: ${this.body.slice(0, 120)}...`;
+    preview(): string {
+    return `[${this.region}] ${this.body.slice(0, 120)}...`;
   }
 }
