@@ -111,6 +111,17 @@ describe("Test Case 6: Failure and Replay Scenarios", () => {
     expect(report.body.byArticle[0].purchaseCount).toBe(1);
   });
 
+  it("settles only once when the same payment arrives twice at the same time", async () => {
+    const [first, second] = await Promise.all([
+      request(app).get("/articles/wn-001").set("PAYMENT-SIGNATURE", "signature-1"),
+      request(app).get("/articles/wn-001").set("PAYMENT-SIGNATURE", "signature-1"),
+    ]);
+
+    expect([first.status, second.status].sort()).toEqual([200, 402]);
+    const report = await request(app).get("/admin/sales-report").set("X-Admin-Key", ADMIN_KEY);
+    expect(report.body.byArticle[0].purchaseCount).toBe(1);
+  });
+
   it("returns 402 when the facilitator rejects the payment", async () => {
     fake.mode = "invalid";
     const res = await request(app).get("/articles/wn-001").set("PAYMENT-SIGNATURE", "bad");

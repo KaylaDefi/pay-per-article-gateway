@@ -72,6 +72,11 @@ export class PaymentVerifier implements PaymentProvider {
       return { isValid: false, reason: "malformed payment header" };
     }
 
+    const mismatch = this.checkBinding(payload, requirements);
+    if (mismatch) {
+      return { isValid: false, reason: mismatch };
+    }
+
     const data = await this.callFacilitator<FacilitatorVerifyResponse>(
       "/verify",
       payload,
@@ -114,6 +119,25 @@ export class PaymentVerifier implements PaymentProvider {
     } catch {
       return null;
     }
+  }
+
+    private checkBinding(payload: unknown, requirements: PaymentRequirements): string | null {
+    const p = payload as {
+      accepted?: Partial<PaymentRequirements>;
+      payload?: { authorization?: { to?: string; value?: string } };
+    };
+    const accepted = p.accepted;
+    const authorization = p.payload?.authorization;
+
+    if (!accepted || !authorization) return "malformed payment header";
+    if (accepted.resource !== requirements.resource) return "payment is for a different article";
+    if (accepted.amount !== requirements.amount || authorization.value !== requirements.amount) {
+      return "payment amount does not match the price";
+    }
+    if (authorization.to?.toLowerCase() !== requirements.payTo.toLowerCase()) {
+      return "payment recipient does not match";
+    }
+    return null;
   }
 
   private async callFacilitator<T>(

@@ -34,15 +34,51 @@ describe("PaymentVerifier without the network", () => {
     expect(result).toEqual({ isValid: false, reason: "malformed payment header" });
   });
 
+  it("rejects a payment signed for a different article", async () => {
+    const verifier = makeVerifier(UNREACHABLE_URL);
+    const paidFor = await verifier.getPaymentRequirements(article, "http://localhost:3000/articles/wn-001");
+    const requested = await verifier.getPaymentRequirements(article, "http://localhost:3000/articles/wn-002");
+
+    const result = await verifier.verifyPayment(encode(boundPayment(paidFor)), requested);
+    expect(result).toEqual({ isValid: false, reason: "payment is for a different article" });
+  });
+
+  it("rejects a manipulated payment amount", async () => {
+    const verifier = makeVerifier(UNREACHABLE_URL);
+    const requirements = await verifier.getPaymentRequirements(article, RESOURCE_URL);
+    const tampered = boundPayment({ ...requirements, amount: "1" });
+
+    const result = await verifier.verifyPayment(encode(tampered), requirements);
+    expect(result).toEqual({ isValid: false, reason: "payment amount does not match the price" });
+  });
+
   it("throws FacilitatorUnavailableError when the facilitator cannot be reached", async () => {
     const verifier = makeVerifier(UNREACHABLE_URL);
     const requirements = await verifier.getPaymentRequirements(article, RESOURCE_URL);
 
     await expect(
-      verifier.verifyPayment(encode({ x402Version: 2 }), requirements)
+      verifier.verifyPayment(encode(boundPayment(requirements)), requirements)
     ).rejects.toBeInstanceOf(FacilitatorUnavailableError);
   });
 });
+
+function boundPayment(requirements: Awaited<ReturnType<PaymentVerifier["getPaymentRequirements"]>>) {
+  return {
+    x402Version: 2,
+    payload: {
+      authorization: {
+        from: "0x000000000000000000000000000000000000b0b0",
+        to: requirements.payTo,
+        value: requirements.amount,
+        validAfter: "0",
+        validBefore: String(Math.floor(Date.now() / 1000) + 60),
+        nonce: "0x" + "00".repeat(32),
+      },
+      signature: "0x" + "00".repeat(65),
+    },
+    accepted: requirements,
+  };
+}
 
 describe.skipIf(!process.env.RUN_INTEGRATION)("PaymentVerifier with the real facilitator", () => {
   const facilitatorUrl = process.env.FACILITATOR_URL ?? "https://x402.org/facilitator";

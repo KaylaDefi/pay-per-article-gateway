@@ -9,6 +9,7 @@
     "start": "node dist/server.js",
     "test": "vitest run",
     "test:watch": "vitest",
+    "typecheck:test": "tsc --noEmit -p tsconfig.test.json",
     "test:integration": "RUN_INTEGRATION=1 vitest run tests/integration"
   },
   "author": "",
