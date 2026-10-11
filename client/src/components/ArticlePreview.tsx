@@ -1,7 +1,17 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useChains, useConnection, useSignTypedData } from "wagmi";
-import { fetchPreview, CATEGORY_LABELS, type FullArticle } from "../api/articles";
+import {
+  fetchPreview,
+  fetchOwnership,
+  CATEGORY_LABELS,
+  type FullArticle,
+} from "../api/articles";
 import { purchaseArticle } from "../api/paidFetch";
+
+function formatPrice(price: FullArticle["price"]): string {
+  const amount = Number(price);
+  return Number.isFinite(amount) ? `${amount.toFixed(2)} USDC` : `${price} USDC`;
+}
 
 interface ArticlePreviewProps {
   articleId: string;
@@ -19,6 +29,13 @@ export function ArticlePreview({ articleId, onBack, onPurchased }: ArticlePrevie
     queryFn: () => fetchPreview(articleId),
   });
 
+  const { data: ownership } = useQuery({
+    queryKey: ["ownership", articleId, address],
+    queryFn: () => fetchOwnership(articleId, address!),
+    enabled: !!address,
+  });
+  const owned = ownership?.owned === true;
+
   const purchase = useMutation({
     mutationFn: () => purchaseArticle(articleId, address!, signTypedData.mutateAsync),
     onSuccess: onPurchased,
@@ -31,7 +48,7 @@ export function ArticlePreview({ articleId, onBack, onPurchased }: ArticlePrevie
   const onRightNetwork = chainId === targetChain.id;
   const canPay = isConnected && !!address && onRightNetwork && !purchase.isPending;
 
-    return (
+  return (
     <article className="story">
       <button className="back" onClick={onBack}>
         Back to library
@@ -47,13 +64,16 @@ export function ArticlePreview({ articleId, onBack, onPurchased }: ArticlePrevie
 
       <div className="ticket">
         <div className="ticket-price">
-          <strong>${article.price}</strong>
-          <span>USDC on {targetChain.name}</span>
+          <strong>{formatPrice(article.price)}</strong>
+          <span>{owned ? "Purchased with this wallet" : `USDC on ${targetChain.name}`}</span>
         </div>
         <div className="ticket-action">
           <button className="pay" disabled={!canPay} onClick={() => purchase.mutate()}>
-            {purchase.isPending ? "Confirm in your wallet" : "Pay to read"}
+            {purchase.isPending ? "Confirm in your wallet" : owned ? "Read again" : "Pay to read"}
           </button>
+          {owned && (
+            <p className="hint">Signing confirms you own it. You won't be charged again.</p>
+          )}
           {!isConnected && <p className="hint">Connect a wallet above to buy this article.</p>}
           {isConnected && !onRightNetwork && (
             <p className="hint">Switch your wallet to {targetChain.name} to pay.</p>

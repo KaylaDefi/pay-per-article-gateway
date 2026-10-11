@@ -49,3 +49,14 @@ export function fetchArticles(filters: ArticleFilters = {}): Promise<ArticleSumm
 export function fetchPreview(id: string): Promise<ArticleSummary> {
   return getJson<ArticleSummary>(`/articles/${encodeURIComponent(id)}/preview`);
 }
+
+export function fetchOwnership(id: string, wallet: string): Promise<{ owned: boolean }> {
+  return getJson(
+    `/articles/${encodeURIComponent(id)}/ownership?wallet=${encodeURIComponent(wallet)}`
+  );
+}
+
+export function formatPrice(price: string): string {
+  const cents = Math.round(parseFloat(price) * 100);
+  return cents < 100 ? `${cents}¢` : `$${(cents / 100).toFixed(2)}`;
+}
