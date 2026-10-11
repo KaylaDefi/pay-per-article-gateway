@@ -1,7 +1,7 @@
 import express, { Request, Response, NextFunction } from "express";
 import { ContentRepository } from "./interfaces/ContentRepository";
 import { PaymentProvider } from "./interfaces/PaymentProvider";
-import { TransactionLogger } from "./services/TransactionLogger";
+import { TransactionStore } from "./interfaces/TransactionStore";
 import { SalesReportGenerator } from "./services/SalesReportGenerator";
 import { createPaymentGateway } from "./routes/paymentGateway";
 import { createArticleRouter } from "./routes/articles";
@@ -9,7 +9,7 @@ import { createArticleRouter } from "./routes/articles";
 export interface AppDependencies {
   articles: ContentRepository;
   payments: PaymentProvider;
-  logger: TransactionLogger;
+  logger: TransactionStore;
   adminApiKey: string;
 }
 

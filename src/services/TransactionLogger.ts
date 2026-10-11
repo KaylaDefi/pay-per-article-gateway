@@ -1,13 +1,24 @@
 import { Transaction } from "../models/Transaction";
+import { TransactionStore } from "../interfaces/TransactionStore";
 
-export class TransactionLogger {
+export class TransactionLogger implements TransactionStore {
   private transactions: Transaction[] = [];
 
-  record(transaction: Transaction): void {
+  async record(transaction: Transaction): Promise<void> {
     this.transactions.push(transaction);
   }
 
-  getAll(): Transaction[] {
+  async getAll(): Promise<Transaction[]> {
     return [...this.transactions];
+  }
+
+  async hasPurchased(walletAddress: string, articleId: string): Promise<boolean> {
+    const wallet = walletAddress.toLowerCase();
+    return this.transactions.some(
+      (t) =>
+        t.articleId === articleId &&
+        t.settlementStatus === "settled" &&
+        t.buyerWalletAddress.toLowerCase() === wallet
+    );
   }
 }

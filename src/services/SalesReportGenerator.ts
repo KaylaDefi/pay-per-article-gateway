@@ -1,20 +1,20 @@
 import { Transaction, SalesReport, SalesSummary } from "../models/Transaction";
 import { ContentRepository } from "../interfaces/ContentRepository";
-import { TransactionLogger } from "./TransactionLogger";
+import { TransactionStore } from "../interfaces/TransactionStore";
 import { Article } from "../models/Article";
 
 const USDC_UNITS = 1_000_000;
 
 export class SalesReportGenerator {
   constructor(
-    private readonly logger: TransactionLogger,
+    private readonly logger: TransactionStore,
     private readonly articles: ContentRepository
   ) {}
 
   async generate(): Promise<SalesReport> {
-    const settled = this.logger
-      .getAll()
-      .filter((t) => t.settlementStatus === "settled");
+    const settled = (await this.logger.getAll()).filter(
+      (t) => t.settlementStatus === "settled"
+    );
 
     const categoryOf = new Map<string, string>();
     for (const t of settled) {

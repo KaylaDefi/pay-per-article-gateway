@@ -78,7 +78,18 @@ describe("Test Case 4: Purchase an Article", () => {
     expect(decode(res.headers["payment-response"]).transaction).toBe(FAKE_TX_HASH);
   });
 
-    it("returns 404 for a nonexistent article before asking for payment", async () => {
+  it("delivers an owned article to the same wallet without settling or recording again", async () => {
+    await request(app).get("/articles/wn-001").set("PAYMENT-SIGNATURE", "signature-1");
+
+    const again = await request(app).get("/articles/wn-001").set("PAYMENT-SIGNATURE", "signature-2");
+
+    expect(again.status).toBe(200);
+    expect(again.body.body).toBeTruthy();
+    expect(again.headers["payment-response"]).toBeUndefined();
+    expect(await logger.getAll()).toHaveLength(1);
+  });
+
+  it("returns 404 for a nonexistent article before asking for payment", async () => {
     const res = await request(app).get("/articles/xx-999").set("PAYMENT-SIGNATURE", "signature-1");
     expect(res.status).toBe(404);
   });
@@ -97,7 +108,7 @@ describe("Test Case 5: Publisher Sales Report", () => {
     expect(res.body.byArticle).toEqual([{ key: "wn-001", totalRevenue: "0.25", purchaseCount: 1 }]);
     expect(res.body.byCategory[0].key).toBe("world-news");
     expect(res.body.byAuthor[0].key).toBe("Maya Okafor");
-    expect(logger.getAll()[0].buyerWalletAddress).toBe(BUYER_ADDRESS);
+    expect((await logger.getAll())[0].buyerWalletAddress).toBe(BUYER_ADDRESS);
   });
 });
 
@@ -127,14 +138,15 @@ describe("Test Case 6: Failure and Replay Scenarios", () => {
     const res = await request(app).get("/articles/wn-001").set("PAYMENT-SIGNATURE", "bad");
     expect(res.status).toBe(402);
     expect(res.body.error).toBe("invalid_signature");
-    expect(logger.getAll()).toHaveLength(0);
+    expect(await logger.getAll()).toHaveLength(0);
   });
 
   it("logs a failed settlement without counting it as revenue", async () => {
     fake.mode = "settlement-fails";
     const res = await request(app).get("/articles/wn-001").set("PAYMENT-SIGNATURE", "signature-1");
     expect(res.status).toBe(402);
-    expect(logger.getAll()[0].settlementStatus).toBe("failed");
+    const transactions = await logger.getAll();
+    expect(transactions[0].settlementStatus).toBe("failed");
 
     const report = await request(app).get("/admin/sales-report").set("X-Admin-Key", ADMIN_KEY);
     expect(report.body.byArticle).toEqual([]);

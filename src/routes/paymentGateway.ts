@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction, RequestHandler } from "express";
 import { PaymentProvider, PaymentRequirements } from "../interfaces/PaymentProvider";
 import { ContentRepository } from "../interfaces/ContentRepository";
-import { TransactionLogger } from "../services/TransactionLogger";
+import { TransactionStore } from "../interfaces/TransactionStore";
 import { FacilitatorUnavailableError } from "../services/PaymentVerifier";
 
 const RETRY_AFTER_SECONDS = 30;
@@ -9,7 +9,7 @@ const RETRY_AFTER_SECONDS = 30;
 interface GatewayDependencies {
   payments: PaymentProvider;
   articles: ContentRepository;
-  logger: TransactionLogger;
+  logger: TransactionStore;
 }
 
 function encode(value: unknown): string {
@@ -33,6 +33,8 @@ export function createPaymentGateway({
   articles,
   logger,
 }: GatewayDependencies): RequestHandler {
+    // Signatures already used to deliver an article; in memory, like the transaction store
+  const usedPaymentHeaders = new Set<string>();
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
       // Requested
@@ -58,6 +60,12 @@ export function createPaymentGateway({
         return;
       }
 
+      // Reject a signature that has already been used to deliver an article
+      if (usedPaymentHeaders.has(paymentHeader)) {
+        sendPaymentRequired(res, requirements, "payment already used");
+        return;
+      }
+
       // PaymentPending -> Verified or Rejected
       const verification = await payments.verifyPayment(paymentHeader, requirements);
       if (!verification.isValid) {
@@ -65,9 +73,18 @@ export function createPaymentGateway({
         return;
       }
 
+      // Already owned: the verified signature proves the wallet, so deliver without charging again
+      if (verification.payer && (await logger.hasPurchased(verification.payer, article.id))) {
+        usedPaymentHeaders.add(paymentHeader);
+        res.locals.article = article;
+        next();
+        return;
+      }
+
       // Verified -> Delivered or Rejected
+      usedPaymentHeaders.add(paymentHeader);
       const settlement = await payments.settlePayment(paymentHeader, requirements);
-      logger.record({
+      await logger.record({
         articleId: article.id,
         author: article.author,
         buyerWalletAddress: settlement.payer ?? verification.payer ?? "unknown",
@@ -91,6 +108,7 @@ export function createPaymentGateway({
           payer: settlement.payer,
         })
       );
+      usedPaymentHeaders.add(paymentHeader);
       res.locals.article = article;
       next();
     } catch (err) {
