@@ -2,6 +2,7 @@ import { Router, RequestHandler } from "express";
 import { ContentRepository, ContentFilters } from "../interfaces/ContentRepository";
 import { ContentItem } from "../models/ContentItem";
 import { Article } from "../models/Article";
+import { TransactionStore } from "../interfaces/TransactionStore";
 
 function queryString(value: unknown): string | undefined {
   return typeof value === "string" && value.trim() !== "" ? value.trim() : undefined;
@@ -20,7 +21,8 @@ function toSummary(item: ContentItem) {
 
 export function createArticleRouter(
   articles: ContentRepository,
-  paymentGateway: RequestHandler
+  paymentGateway: RequestHandler,
+  transactions: TransactionStore
 ): Router {
   const router = Router();
 
@@ -49,6 +51,17 @@ export function createArticleRouter(
       return;
     }
     res.json(toSummary(item));
+  });
+
+  // Ownership check: GET /articles/:id/ownership?wallet=0x...
+  router.get("/:id/ownership", async (req, res) => {
+    const id = req.params.id;
+    const wallet = queryString(req.query.wallet);
+    if (typeof id !== "string" || !wallet) {
+      res.status(400).json({ error: "article id and wallet are required" });
+      return;
+    }
+    res.json({ owned: await transactions.hasPurchased(wallet, id) });
   });
 
   // Paid article: GET /articles/:id (runs the payment gateway first)

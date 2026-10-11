@@ -159,4 +159,21 @@ describe("Test Case 6: Failure and Replay Scenarios", () => {
     expect(res.headers["retry-after"]).toBe("30");
     expect(res.body.retryAfter).toBe(30);
   });
+
+describe("Ownership indicator", () => {
+  it("reports whether a wallet owns an article", async () => {
+    const before = await request(app).get(`/articles/wn-001/ownership?wallet=${BUYER_ADDRESS}`);
+    expect(before.body).toEqual({ owned: false });
+
+    await request(app).get("/articles/wn-001").set("PAYMENT-SIGNATURE", "signature-1");
+
+    const after = await request(app).get(`/articles/wn-001/ownership?wallet=${BUYER_ADDRESS}`);
+    expect(after.body).toEqual({ owned: true });
+  });
+
+  it("requires a wallet address", async () => {
+    const res = await request(app).get("/articles/wn-001/ownership");
+    expect(res.status).toBe(400);
+  });
+});
 });

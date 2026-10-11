@@ -22,7 +22,7 @@ export function createApp({ articles, payments, logger, adminApiKey }: AppDepend
     res.json({ status: "ok" });
   });
 
-  app.use("/articles", createArticleRouter(articles, paymentGateway));
+  app.use("/articles", createArticleRouter(articles, paymentGateway, logger));
 
   app.get("/admin/sales-report", async (req, res) => {
     if (req.header("X-Admin-Key") !== adminApiKey) {
