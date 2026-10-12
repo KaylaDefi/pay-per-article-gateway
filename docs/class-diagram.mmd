@@ -56,11 +56,12 @@ classDiagram
         }
         class TransactionLogger {
             -transactions: Transaction[]
-            +record(transaction) void
-            +getAll() Transaction[]
+            +record(transaction) Promise~void~
+            +getAll() Promise~Transaction[]~
+            +hasPurchased(walletAddress, articleId) Promise~boolean~
         }
         class SalesReportGenerator {
-            -logger: TransactionLogger
+            -logger: TransactionStore
             -articles: ContentRepository
             +generate() Promise~SalesReport~
         }
@@ -79,6 +80,12 @@ classDiagram
             +byCategory: SalesSummary[]
             +byAuthor: SalesSummary[]
         }
+        class TransactionStore {
+            <<interface>>
+            +record(transaction) Promise~void~
+            +getAll() Promise~Transaction[]~
+            +hasPurchased(walletAddress, articleId) Promise~boolean~
+        }
     }
 
     ContentItem <|-- Article
@@ -90,7 +97,8 @@ classDiagram
     ContentRepository <|.. ArticleRepository
 
     ArticleRepository ..> ContentItem : stores
-    SalesReportGenerator --> TransactionLogger
+    TransactionStore <|.. TransactionLogger
+    SalesReportGenerator --> TransactionStore
     SalesReportGenerator --> ContentRepository
     SalesReportGenerator ..> SalesReport
     TransactionLogger --> Transaction

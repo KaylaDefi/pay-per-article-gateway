@@ -1,0 +1,17 @@
+stateDiagram-v2
+    [*] --> Requested : reader requests article
+
+    Requested --> PaymentRequired : no valid payment attached, gateway returns HTTP 402
+
+    PaymentRequired --> PaymentPending : reader submits signed EIP-3009 authorization
+
+    PaymentPending --> Verified : facilitator /verify succeeds
+    PaymentPending --> Rejected : facilitator /verify fails
+
+    Verified --> Delivered : wallet already owns article
+    Verified --> Delivered : facilitator /settle succeeds
+    Verified --> Rejected : facilitator /settle fails
+
+    Rejected --> PaymentRequired : reader retries payment
+
+    Delivered --> [*] : article served (HTTP 200)
